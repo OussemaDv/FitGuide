@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "388984335523",
+    "project_id": "fitguide-1b715",
+    "storage_bucket": "fitguide-1b715.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:388984335523:android:929046024a1e5e1ef5a316",
+        "android_client_info": {
+          "package_name": "com.example.fitguide"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXXEw1ZhryRkFDSrUyaHncSbZpyJmShsg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
