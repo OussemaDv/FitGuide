@@ -7,11 +7,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.net.Uri;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -21,24 +21,29 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.firebase.Firebase;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.annotations.Nullable;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 
 public class UserProfileActivity extends AppCompatActivity {
 
     private static final String TAG = "UserProfileActivity";
 
-    private TextView textViewWelcome, textViewFullName, textViewEmail, textViewDoB, textViewGender, textViewMobile;
+    private TextView textViewWelcome, textViewFullName, textViewEmail, textViewDoB, textViewGender, textViewMobile, textRole;
     private ProgressBar progressBar;
     private String fullName, email, doB, gender, mobile, image_uri;
     private ImageView imageView;
     private FirebaseAuth authProfile;
+    private Button buttonUpdate, buttonDelete;
+    private FirebaseFirestore fStore;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,13 +56,41 @@ public class UserProfileActivity extends AppCompatActivity {
             return insets;
         });
 
-        getSupportActionBar().setTitle("Home");
+        getSupportActionBar().setTitle("User Details");
         textViewWelcome = findViewById(R.id.textView_show_welcome);
         textViewFullName = findViewById(R.id.textView_show_full_name);
         textViewEmail = findViewById(R.id.textView_show_email);
         textViewDoB = findViewById(R.id.textView_show_dob);
         textViewGender = findViewById(R.id.textView_show_gender);
         textViewMobile = findViewById(R.id.textView_show_mobile);
+        textRole = findViewById(R.id.text_role);
+        buttonDelete = findViewById(R.id.button_delete_user);
+        buttonUpdate = findViewById(R.id.button_update_user);
+
+        userId = getIntent().getStringExtra("userId");
+
+        FirebaseFirestore fStore = FirebaseFirestore.getInstance();
+        DocumentReference docRef = fStore.collection("users").document(userId);
+
+
+
+        buttonUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(UserProfileActivity.this, UpdateProfileActivity.class);
+                intent.putExtra("userId", userId);
+                //Log.d("userIntent", user.toString());
+                startActivity(intent);
+
+            }
+        });
+
+        buttonDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showDeleteConfirmationDialog(userId, docRef);
+            }
+        });
 
         //Set OnClickListener on ImageView to Open UploadProfileActivity
         imageView = findViewById(R.id.imageView_profile_pic);
@@ -72,13 +105,75 @@ public class UserProfileActivity extends AppCompatActivity {
         authProfile = FirebaseAuth.getInstance();
         FirebaseUser firebaseUser = authProfile.getCurrentUser();
 
-        if(firebaseUser == null){
+        //String userId = firebaseUser.getUid();
+
+        if (userId == null) {
+            Toast.makeText(this, "User ID not found", Toast.LENGTH_SHORT).show();
+            finish(); // Close activity if userId is missing
+            return;
+        }
+
+        DocumentReference documentReference = fStore.collection("users").document(userId);
+        documentReference.addSnapshotListener(UserProfileActivity.this, new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                textViewWelcome.setText(documentSnapshot.getString("role"));
+                textViewFullName.setText(documentSnapshot.getString("fName"));
+                textViewEmail.setText(documentSnapshot.getString("email"));
+                textViewDoB.setText(documentSnapshot.getString("dob"));
+                textViewGender.setText(documentSnapshot.getString("gender"));
+                textViewMobile.setText(documentSnapshot.getString("mobile"));
+                textRole.setText(documentSnapshot.getString("role"));
+            }
+        });
+
+        /*if(firebaseUser == null){
             Toast.makeText(UserProfileActivity.this, "Something went wrong! User's details are not available at the moment",
                     Toast.LENGTH_LONG).show();
         }else{
             checkEmailVerified(firebaseUser);
-            showUser(firebaseUser.getEmail());
-        }
+        }*/
+
+    }
+
+    private void showDeleteConfirmationDialog(String userId, DocumentReference docRef) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirm Delete");
+        builder.setMessage("Are you sure you want to delete this user?");
+
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                deleteUser(userId, docRef);
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void deleteUser(String userId, DocumentReference docRef) {
+        Log.d("deleteuser", userId);
+
+            docRef.delete()
+                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful()) {
+                                Toast.makeText(UserProfileActivity.this, "User deleted successfully", Toast.LENGTH_SHORT).show();
+                                finish(); // Close the activity after deletion
+                            } else {
+                                Toast.makeText(UserProfileActivity.this, "Failed to delete user", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
 
     }
 
@@ -111,29 +206,7 @@ public class UserProfileActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
-    private  void showUser(String email){
-        MyDatabaseHelper dbHelper = new MyDatabaseHelper(this);
-        User user = dbHelper.getUserByEmail(email);
 
-        if (user != null){
-            fullName = user.getName();
-            doB = user.getDob();
-            gender = user.getGender();
-            mobile = user.getMobile();
-            image_uri = user.getImage_uri();
-
-            textViewWelcome.setText("Welcome, " + fullName + "!");
-            textViewFullName.setText(fullName);
-            textViewEmail.setText(email);
-            textViewMobile.setText(mobile);
-            textViewGender.setText(gender);
-            textViewDoB.setText(doB);
-            Log.i(TAG, "image uri : " + image_uri);
-            //if(image_uri != null){
-                imageView.setImageURI(Uri.parse(image_uri));
-            //}
-        }
-    }
 
     //Crating actionBar menu
   /*  private void showUserProfile(FirebaseUser firebaseUser) {
@@ -184,10 +257,10 @@ public class UserProfileActivity extends AppCompatActivity {
             startActivity((getIntent()));
             finish();
             overridePendingTransition(0,0);
-        }/*else if(id == R.id.menu_update_profile){
+        }else if(id == R.id.menu_update_profile){
             Intent intent = new Intent(UserProfileActivity.this, UpdateProfileActivity.class);
             startActivity(intent);
-        }else if(id == R.id.menu_update_email){
+        }/*else if(id == R.id.menu_update_email){
             Intent intent = new Intent(UserProfileActivity.this, UpdateEmailActivity.class);
             startActivity(intent);
         }else if(id == R.id.menu_change_password){
@@ -196,6 +269,7 @@ public class UserProfileActivity extends AppCompatActivity {
         }else if(id == R.id.menu_delete_profile){
             Intent intent = new Intent(UserProfileActivity.this, DeleteProfileActivity.class);
             startActivity(intent);
+            finish();
         }*/else if(id == R.id.menu_logout){
             authProfile.signOut();
             Toast.makeText(UserProfileActivity.this, "Logged Out", Toast.LENGTH_LONG).show();

@@ -8,6 +8,8 @@
         android:alphabeticShortcut="r"
         android:orderInCategory="1"
         app:showAsAction="ifRoom"/>
+    <item android:title="Sensors Data"
+        android:id="@+id/sensors_data"/>
     <item android:title="Update Profile"
         android:id="@+id/menu_update_profile"/>
     <item android:title="Update Email"

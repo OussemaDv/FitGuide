@@ -7,12 +7,14 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -23,6 +25,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Firebase;
 import com.google.firebase.auth.AuthResult;
@@ -34,8 +37,13 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
     private EditText editTextRegisterFullName, editTextRegisterEmail, editTextRegisterDoB, editTextRegisterMobile, editTextRegisterPwd, editTextRegisterConfirmPwd;
@@ -43,7 +51,11 @@ public class RegisterActivity extends AppCompatActivity {
     private RadioGroup radioGroupRegisterGender;
     private RadioButton radioButtonRegisterGenderSelected;
     private DatePickerDialog picker;
+    private Spinner spinner;
     private static final String TAG= "RegisterActivity";
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +64,8 @@ public class RegisterActivity extends AppCompatActivity {
 
         Toast.makeText(RegisterActivity.this,"You can sign up now", Toast.LENGTH_LONG).show();
 
+
+
         progressBar = findViewById(R.id.progressBar);
         editTextRegisterFullName = findViewById(R.id.editText_register_full_name);
         editTextRegisterEmail = findViewById(R.id.editText_register_email);
@@ -59,6 +73,7 @@ public class RegisterActivity extends AppCompatActivity {
         editTextRegisterMobile = findViewById(R.id.editText_register_mobile);
         editTextRegisterPwd = findViewById(R.id.editText_register_password);
         editTextRegisterConfirmPwd = findViewById(R.id.editText_register_confirm_password);
+
 
         //RadioButton for Gender
         radioGroupRegisterGender = findViewById(R.id.radio_group_register_gender);
@@ -84,6 +99,16 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
 
+        spinner = findViewById(R.id.spinner_register_role);
+        ArrayList<String> arrayList = new ArrayList<>();
+        arrayList.add("Admin");
+        arrayList.add("Technician");
+        arrayList.add("Security agent");
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, arrayList);
+        adapter.setDropDownViewResource(android.R.layout.select_dialog_singlechoice);
+        spinner.setAdapter(adapter);
+
         Button buttonSignUp = findViewById(R.id.button_signup);
         buttonSignUp.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -98,6 +123,7 @@ public class RegisterActivity extends AppCompatActivity {
                 String textMobile = editTextRegisterMobile.getText().toString();
                 String textPwd = editTextRegisterPwd.getText().toString();
                 String textConfirmPwd = editTextRegisterConfirmPwd.getText().toString();
+                String role = spinner.getSelectedItem().toString();
                 String textGender;
                 
                 if(TextUtils.isEmpty(textFullName)){
@@ -148,22 +174,41 @@ public class RegisterActivity extends AppCompatActivity {
                     editTextRegisterConfirmPwd.clearComposingText();
                 }else {
                     textGender = radioButtonRegisterGenderSelected.getText().toString();
-                    progressBar.setVisibility(View.VISIBLE);
-                    registerUser(textFullName, textEmail, textDoB, textGender, textMobile, textPwd);
+                   // progressBar.setVisibility(View.VISIBLE);
+                    registerUser(textFullName, textEmail, textDoB, textGender, textMobile, textPwd, role);
                 }
             }
         });
     }
 
-    private void registerUser(String textFullName, String textEmail, String textDoB, String textGender, String textMobile, String textPwd) {
+    private void registerUser(String textFullName, String textEmail, String textDoB, String textGender, String textMobile, String textPwd, String role) {
         FirebaseAuth auth = FirebaseAuth.getInstance();
+        FirebaseFirestore fstore = FirebaseFirestore.getInstance();
         //Create User Profile
         auth.createUserWithEmailAndPassword(textEmail, textPwd).addOnCompleteListener(RegisterActivity.this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if(task.isSuccessful()){
                     FirebaseUser firebaseUser = auth.getCurrentUser();
-
+                    DocumentReference documentReference = fstore.collection("users").document(firebaseUser.getUid());
+                    Map<String, Object> user = new HashMap<>();
+                    user.put("fName", textFullName);
+                    user.put("email", textEmail);
+                    user.put("dob", textDoB);
+                    user.put("gender", textGender);
+                    user.put("phone", textMobile);
+                    user.put("role", role);
+                    documentReference.set(user).addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "onSuccess: user Profile is created for " + firebaseUser.getUid());
+                        Toast.makeText(RegisterActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(RegisterActivity.this, UserList.class);
+                        startActivity(intent);
+                    })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error adding document", e);
+                                Toast.makeText(RegisterActivity.this, "Firestore Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            });
+/*
                     //Update Display Name of User
                     UserProfileChangeRequest profileChangeRequest = new UserProfileChangeRequest.Builder().setDisplayName(textFullName).build();
                     firebaseUser.updateProfile(profileChangeRequest);
@@ -198,24 +243,24 @@ public class RegisterActivity extends AppCompatActivity {
                         }
                     });
 
-
+*/
                 }else{
                     try{
                         throw task.getException();
                     }catch(FirebaseAuthWeakPasswordException e){
                         editTextRegisterPwd.setError("Your password is too weak. Kindly use a mix of alphabets, numbers and special characters");
                         editTextRegisterPwd.requestFocus();
-                        progressBar.setVisibility(View.GONE);
+                     //   progressBar.setVisibility(View.GONE);
 
                     }catch(FirebaseAuthInvalidCredentialsException e){
                         editTextRegisterPwd.setError("Your email is invalid or already in use. Kindly re-enter");
                         editTextRegisterPwd.requestFocus();
-                        progressBar.setVisibility(View.GONE);
+                      //  progressBar.setVisibility(View.GONE);
 
                     }catch (FirebaseAuthUserCollisionException e){
                         editTextRegisterPwd.setError("User is already registered with this email. Use another email.");
                         editTextRegisterPwd.requestFocus();
-                        progressBar.setVisibility(View.GONE);
+                       // progressBar.setVisibility(View.GONE);
 
                     }catch(Exception e){
                         Log.e(TAG, e.getMessage());
@@ -223,11 +268,10 @@ public class RegisterActivity extends AppCompatActivity {
                     }
 
                 }
-                progressBar.setVisibility(View.GONE);
+          //      progressBar.setVisibility(View.GONE);
 
             }});
-        MyDatabaseHelper myDB = new MyDatabaseHelper(RegisterActivity.this);
-        myDB.addUser(textFullName.trim(), textEmail.trim(),textDoB.trim(),textGender.trim(),textMobile.trim(), null);
+
         }
 
 

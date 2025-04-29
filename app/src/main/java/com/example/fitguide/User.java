@@ -2,37 +2,28 @@ package com.example.fitguide;
 
 public class User {
 
-    String id;
-    String name,email,dob,gender,mobile, image_uri;
 
-    public User(String id, String name, String email, String dob, String gender, String mobile, String image_uri) {
+    String id,dob,email,fName,gender,phone, role;
+
+    public User() {
+    }
+
+    public User(String id, String dob, String email, String fName, String gender, String phone, String role) {
         this.id = id;
-        this.name = name;
-        this.email = email;
         this.dob = dob;
+        this.email = email;
+        this.fName = fName;
         this.gender = gender;
-        this.mobile = mobile;
-        this.image_uri = image_uri;
+        this.phone = phone;
+        this.role = role;
     }
 
     public String getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getDob() {
@@ -43,6 +34,22 @@ public class User {
         this.dob = dob;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getfName() {
+        return fName;
+    }
+
+    public void setfName(String fName) {
+        this.fName = fName;
+    }
+
     public String getGender() {
         return gender;
     }
@@ -51,32 +58,32 @@ public class User {
         this.gender = gender;
     }
 
-    public String getMobile() {
-        return mobile;
+    public String getPhone() {
+        return phone;
     }
 
-    public void setMobile(String mobile) {
-        this.mobile = mobile;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
-    public String getImage_uri() {
-        return image_uri;
+    public String getRole() {
+        return role;
     }
 
-    public void setImage_uri(String image_uri) {
-        this.image_uri = image_uri;
+    public void setRole(String role) {
+        this.role = role;
     }
 
     @Override
     public String toString() {
         return "User{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
+                "id='" + id + '\'' +
                 ", dob='" + dob + '\'' +
+                ", email='" + email + '\'' +
+                ", fName='" + fName + '\'' +
                 ", gender='" + gender + '\'' +
-                ", mobile='" + mobile + '\'' +
-                ", image_uri='" + image_uri + '\'' +
+                ", phone='" + phone + '\'' +
+                ", role='" + role + '\'' +
                 '}';
     }
 }

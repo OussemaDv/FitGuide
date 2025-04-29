@@ -108,15 +108,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@mipmap/back_bottom" />
 
-    <ImageView
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/imageView4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="161dp"
+        android:layout_height="82dp"
         android:layout_marginTop="32dp"
         android:layout_marginBottom="32dp"
+        android:adjustViewBounds="false"
+        android:background="#FAF5F5"
+        android:outlineProvider="background"
         app:layout_constraintBottom_toTopOf="@+id/linearLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@mipmap/logo" />
+        app:layout_constraintVertical_bias="1.0"
+        app:shapeAppearanceOverlay="@style/roundedImageView"
+        app:srcCompat="@drawable/logo_act_pharma" />
 </androidx.constraintlayout.widget.ConstraintLayout>

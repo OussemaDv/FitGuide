@@ -1,103 +1,74 @@
 package com.example.fitguide;
 
-import static java.lang.Integer.parseInt;
-
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
-import android.graphics.drawable.BitmapDrawable;
-import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
-import android.graphics.Bitmap;
+
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
-import java.io.ByteArrayOutputStream;
+public class admin_home_page extends AppCompatActivity {
 
-public class UploadProfilePicActivity extends AppCompatActivity {
-
-    private ImageView imageViewUploadPic;
+    private Button manage_users_button, sensors_button, cameras_button, charts_button;
+    private static final String TAG = "admin_home_page";
     private FirebaseAuth authProfile;
-    private static final int PICK_IMAGE_REQUEST = 1;
-    private Uri uriImage;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_upload_profile_pic);
+        setContentView(R.layout.activity_admin_home_page);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        getSupportActionBar().setTitle("Upload Profile Picture");
+        manage_users_button = findViewById(R.id.button_manage_users);
+        sensors_button = findViewById(R.id.button_sensors);
+        cameras_button = findViewById(R.id.button_cameras);
+        charts_button = findViewById(R.id.button_charts);
 
-        Button buttonUploadPicChoose = findViewById(R.id.upload_pic_choose_button);
-        Button buttonUploadPic = findViewById(R.id.upload_pic_button);
-        imageViewUploadPic = findViewById(R.id.imageView_profile_dp);
-
-        //Choosing the image
-        buttonUploadPicChoose.setOnClickListener(new View.OnClickListener() {
+        manage_users_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openFileChooser();
+                startActivity(new Intent(admin_home_page.this, UserList.class));
+            }
+        });
+        sensors_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //startActivity(new Intent(admin_home_page.this, SensorsData.class));                startActivity(new Intent(admin_home_page.this, SensorsData.class));
+                startActivity(new Intent(admin_home_page.this, RealtimeDataActivity.class));
+
+            }
+        });
+        charts_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //startActivity(new Intent(admin_home_page.this, SensorsData.class));                startActivity(new Intent(admin_home_page.this, SensorsData.class));
+                startActivity(new Intent(admin_home_page.this, SensorsData.class));
+
             }
         });
 
-        //Uploading the Image
-        buttonUploadPic.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                UploadPic();
-            }
-        });
+        authProfile = FirebaseAuth.getInstance();
+        FirebaseUser firebaseUser = authProfile.getCurrentUser();
+
+
     }
-
-    private void openFileChooser(){
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(intent, PICK_IMAGE_REQUEST);
-    }
-
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() !=null){
-            uriImage = data.getData();
-            Log.d("UploadProfilePicActivity", "Selected Image URI: " + uriImage.toString());
-            imageViewUploadPic.setImageURI(uriImage);
-        }
-    }
-
-    private void UploadPic(){
-        if(uriImage != null){
-            Bitmap bitmap = ((BitmapDrawable) imageViewUploadPic.getDrawable()).getBitmap();
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-            byte[] imageBytes = stream.toByteArray();
-
-        }
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         //Inflate menu items
@@ -115,9 +86,8 @@ public class UploadProfilePicActivity extends AppCompatActivity {
             finish();
             overridePendingTransition(0,0);
         }else if(id == R.id.menu_update_profile){
-            Intent intent = new Intent(UploadProfilePicActivity.this, UpdateProfileActivity.class);
+            Intent intent = new Intent(admin_home_page.this, UpdateProfileActivity.class);
             startActivity(intent);
-            finish();
         }/*else if(id == R.id.menu_update_email){
             Intent intent = new Intent(UserProfileActivity.this, UpdateEmailActivity.class);
             startActivity(intent);
@@ -125,20 +95,20 @@ public class UploadProfilePicActivity extends AppCompatActivity {
             Intent intent = new Intent(UserProfileActivity.this, ChangePasswordActivity.class);
             startActivity(intent);
         }else if(id == R.id.menu_delete_profile){
-            Intent intent = new Intent(UploadProfilePicActivity.this, DeleteProfileActivity.class);
+            Intent intent = new Intent(UserProfileActivity.this, DeleteProfileActivity.class);
             startActivity(intent);
             finish();
         }*/else if(id == R.id.menu_logout){
             authProfile.signOut();
-            Toast.makeText(UploadProfilePicActivity.this, "Logged Out", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(UploadProfilePicActivity.this, MainActivity.class);
+            Toast.makeText(admin_home_page.this, "Logged Out", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(admin_home_page.this, MainActivity.class);
 
             //Clear stack to prevent user coming back to UserProfileActivity on pressing back button after logging out
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish(); //close UserProfileActivity
         }else{
-            Toast.makeText(UploadProfilePicActivity.this, "Something went wrong", Toast.LENGTH_LONG).show();
+            Toast.makeText(admin_home_page.this, "Something went wrong", Toast.LENGTH_LONG).show();
 
         }
         return super.onOptionsItemSelected(item);

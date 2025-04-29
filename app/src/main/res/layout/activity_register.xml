@@ -23,7 +23,7 @@
             android:layout_marginLeft="30dp"
             android:layout_marginRight="30dp"
             android:layout_below="@id/textView_register_head"
-            android:text="Welcome to FitGuide!"
+            android:text="Add a new user"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.AppCompat.Headline" />
         <TextView
@@ -150,10 +150,33 @@
             android:textSize="16sp"
             />
         <TextView
-            android:id="@+id/textView_register_password"
+            android:id="@+id/textView_register_role"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/editText_register_mobile"
+            android:textColor="#555555"
+            android:textSize="16sp"
+            android:padding="6dp"
+            android:text="Role*"
+            android:layout_marginTop="10dp"/>
+        <Spinner
+            android:id="@+id/spinner_register_role"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_below="@id/textView_register_role"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/border"
+            android:hint="Enter your role"
+            android:inputType="phone"
+            android:padding="6dp"
+            android:textSize="16sp"
+            />
+        <TextView
+            android:id="@+id/textView_register_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/spinner_register_role"
             android:textColor="#555555"
             android:textSize="16sp"
             android:padding="6dp"

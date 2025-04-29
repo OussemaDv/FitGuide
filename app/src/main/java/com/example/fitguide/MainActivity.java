@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import com.google.firebase.database.annotations.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,12 +34,21 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.concurrent.Executor;
 
 public class MainActivity extends AppCompatActivity {
     private EditText editTextLoginEmail, editTextLoginPwd;
     private FirebaseAuth authProfile;
+    FirebaseFirestore fStore;
+    String userId;
+    String role;
     private static final String TAG = "LoginActivity";
     private Button fingerprint_button;
 
@@ -53,6 +63,25 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w(TAG, "Fetching FCM registration token failed", task.getException());
+                            return;
+                        }
+
+                        // Get new FCM registration token
+                        String token = task.getResult();
+
+                        // Log and toast
+                        Log.d(TAG, token);
+                        Toast.makeText(MainActivity.this, "You device registration token: " + token,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+
 
         //Open Register Activity
         Button buttonRegister = findViewById(R.id.register_button);
@@ -68,6 +97,9 @@ public class MainActivity extends AppCompatActivity {
         editTextLoginPwd = findViewById(R.id.editText_login_pwd);
 
         authProfile = FirebaseAuth.getInstance();
+        fStore = FirebaseFirestore.getInstance();
+
+
 
         //Reset Password
         Button buttonForgotPassword = findViewById(R.id.button_forgot_password);
@@ -149,12 +181,82 @@ public class MainActivity extends AppCompatActivity {
                     //Check if email is verified before user can access their profile
                     if(firebaseUser.isEmailVerified()){
                         Toast.makeText(MainActivity.this, "You are logged in now", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(MainActivity.this, UserProfileActivity.class));
-                        finish();
+                        userId = firebaseUser.getUid();
+
+                        DocumentReference documentReference = fStore.collection("users").document(userId);
+                        documentReference.addSnapshotListener(MainActivity.this, new EventListener<DocumentSnapshot>() {
+                            @Override
+                            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                                if (e != null) {
+                                    Log.w("Firestore", "Listen failed.", e);
+                                    return;
+                                }
+
+                                if (documentSnapshot != null && documentSnapshot.exists()) {
+                                    Log.d("FirestoreDebug", "Document data: " + documentSnapshot.getData());
+                                    role = documentSnapshot.getString("role");
+                                    Log.d("FirestoreDebug", "role value: " + role);
+                                } else {
+                                    Log.d("FirestoreDebug", "Document does not exist.");
+                                }
+                            }
+                        });
+
+                        if (role != null) {
+                            // Use the retrieved role
+                            Log.d("UserRole", "User role: " + role);
+                            // Example:
+                            if (role.equals("Admin")) {
+                                startActivity(new Intent(MainActivity.this, admin_home_page.class));
+                            } else if (role.equals("Technician")) {
+                                startActivity(new Intent(MainActivity.this, technician_home_page.class));
+                            }else{
+                                startActivity(new Intent(MainActivity.this, security_home_page.class));
+                            }
+                        } else {
+                            // Handle the case where the role couldn't be retrieved
+                            Log.e("UserRole", "Failed to retrieve role.");
+                        }
+                        //startActivity(new Intent(MainActivity.this, admin_home_page.class));
+                        //startActivity(new Intent(MainActivity.this, UserProfileActivity.class));
+
+                        //finish();
                     }else{
                         firebaseUser.sendEmailVerification();
-                        authProfile.signOut();
+                        //authProfile.signOut();
                         showAlertDialog();
+
+                        userId = authProfile.getCurrentUser().getUid();
+                        DocumentReference documentReference = fStore.collection("users").document(userId);
+                        documentReference.addSnapshotListener(MainActivity.this, new EventListener<DocumentSnapshot>() {
+                            @Override
+                            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                                role = documentSnapshot.getString("role");
+                            }
+                        });
+
+                        if (role != null) {
+                            // Use the retrieved role
+                            Log.d("UserRole", "User role: " + role);
+                            // Example:
+                            if (role.equals("Admin")) {
+                                startActivity(new Intent(MainActivity.this, admin_home_page.class));
+                                finish();
+                            } else if (role.equals("Technician")) {
+                                startActivity(new Intent(MainActivity.this, technician_home_page.class));
+                                finish();
+                            }else{
+                                startActivity(new Intent(MainActivity.this, security_home_page.class));
+                                finish();
+                            }
+                        } else {
+                            // Handle the case where the role couldn't be retrieved
+                            Log.e("UserRole", "Failed to retrieve role.");
+                        }
+                       // startActivity(new Intent(MainActivity.this, admin_home_page.class));
+                        //startActivity(new Intent(MainActivity.this, UserProfileActivity.class));
+                       // finish();
+
                     }
 
                 }else{
@@ -205,12 +307,11 @@ public class MainActivity extends AppCompatActivity {
         if(authProfile.getCurrentUser()!=null){
             Toast.makeText(MainActivity.this, "Already logged in!",Toast.LENGTH_SHORT).show();
             //Start the UserProfileActivity
-            startActivity(new Intent(MainActivity.this, UserProfileActivity.class));
+            startActivity(new Intent(MainActivity.this, admin_home_page.class));
             finish(); //close MainActivity
         }
         else{
             Toast.makeText(MainActivity.this, "You can log in now",Toast.LENGTH_SHORT).show();
-
         }
     }
     private void checkBioMetricSupported(){
